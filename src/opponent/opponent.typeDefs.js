@@ -19,7 +19,7 @@ export default gql`
   type Opponent {
     championId: Int!
     championName: String!
-    championInfo: Champ!
+    championInfo: Champ
     summonerName: String!
     puuid: Int!
     perks: Perks
