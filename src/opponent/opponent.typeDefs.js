@@ -21,6 +21,7 @@ export default gql`
     championName: String!
     championInfo: Champ
     summonerName: String!
+    summonerId: String!
     puuid: Int!
     perks: Perks
     spell1Id: Int!

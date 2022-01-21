@@ -27,12 +27,14 @@ const resolvers = {
         (ele) => ele.summonerId == summonerInfo.id
       );
 
-      participants = participants.filter((ele) => ele.teamId == teamId);
+      participants = participants.filter((ele) => ele.teamId != teamId);
 
-      participants.map((ele) => {
+      participants.map(async (ele) => {
         let perkIcons = [];
         let perkNames = [];
         let statIcons = [];
+        let perkInfos = [];
+
         for (let e in championInfo.data) {
           if (championInfo.data[e].key == ele.championId) {
             ele.championName = championInfo.data[e].name;
@@ -53,6 +55,7 @@ const resolvers = {
                 if (rune.id == e) {
                   perkIcons.push(rune.icon);
                   perkNames.push(rune.name);
+                  perkInfos.push(rune.shortDesc);
                 }
               });
             });
@@ -61,8 +64,10 @@ const resolvers = {
         ele.perks.statIcons = statIcons;
         ele.perks.perkNames = perkNames;
         ele.perks.perkIcons = perkIcons;
+        ele.perks.perkInfos = perkInfos;
       });
 
+      //console.log(participants);
       return participants;
     },
   },
