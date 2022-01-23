@@ -2,7 +2,6 @@ import { gql } from "apollo-server";
 
 export default gql`
   type Champ {
-    id: Int
     win: Int
     lose: Int
     kill: Int
@@ -10,6 +9,6 @@ export default gql`
     assist: Int
   }
   type Query {
-    getChampInfo(summonerIds: [String!]): [[Champ]]
+    getChampInfo(summonerIds: [String!], championIds: [Int!]): [Champ]
   }
 `;

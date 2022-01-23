@@ -19,14 +19,14 @@ export default gql`
   type Opponent {
     championId: Int!
     championName: String!
+    championImg: String!
     championInfo: Champ
     summonerName: String!
     summonerId: String!
-    puuid: Int!
+    teamId: Int!
+    puuid: String!
     perks: Perks
-    spell1Id: Int!
-    spell2Id: Int!
-    spell1Name: String!
-    spell2Name: String!
+    spell1Img: String!
+    spell2Img: String!
   }
 `;

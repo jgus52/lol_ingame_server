@@ -29,31 +29,42 @@ const resolvers = {
 
       participants = participants.filter((ele) => ele.teamId != teamId);
 
-      participants.map(async (ele) => {
+      const promises = participants.map(async (ele) => {
         let perkIcons = [];
         let perkNames = [];
         let statIcons = [];
         let perkInfos = [];
 
+        const summonerIdUrl = `https://kr.api.riotgames.com/lol/summoner/v4/summoners/${ele.summonerId}?api_key=${process.env.RIOTAPI_KEY}`;
+        const { data: userInfo } = await axios.get(summonerIdUrl);
+        ele.puuid = userInfo.puuid;
+
         for (let e in championInfo.data) {
           if (championInfo.data[e].key == ele.championId) {
-            ele.championName = championInfo.data[e].name;
-            ele.championName = ele.championName.replace(/[^a-z|A-Z]/gi, "");
+            ele.championName = championInfo.data[e].id;
+            ele.championImg = `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${championInfo.data[e].id}.png`;
           }
         }
         for (let e in spellInfo.data) {
-          if (spellInfo.data[e].key == ele.spell1Id)
-            ele.spell1Name = spellInfo.data[e].id;
-          if (spellInfo.data[e].key == ele.spell2Id)
-            ele.spell2Name = spellInfo.data[e].id;
+          if (spellInfo.data[e].key == ele.spell1Id) {
+            ele.spell1Img = `http://ddragon.leagueoflegends.com/cdn/${version}/img/spell/${spellInfo.data[e].id}.png`;
+          }
+          if (spellInfo.data[e].key == ele.spell2Id) {
+            ele.spell2Img = `http://ddragon.leagueoflegends.com/cdn/${version}/img/spell/${spellInfo.data[e].id}.png`;
+          }
         }
         ele.perks.perkIds.map((e) => {
-          if (statRunes.has(e)) statIcons.push(statRunes.get(e));
+          if (statRunes.has(e))
+            statIcons.push(
+              `https://ddragon.leagueoflegends.com/cdn/img/${statRunes.get(e)}`
+            );
           runeInfo.map((runeObj) => {
             runeObj.slots.map((runes) => {
               runes.runes.map((rune) => {
                 if (rune.id == e) {
-                  perkIcons.push(rune.icon);
+                  perkIcons.push(
+                    `https://ddragon.leagueoflegends.com/cdn/img/${rune.icon}`
+                  );
                   perkNames.push(rune.name);
                   perkInfos.push(rune.shortDesc);
                 }
@@ -67,7 +78,7 @@ const resolvers = {
         ele.perks.perkInfos = perkInfos;
       });
 
-      //console.log(participants);
+      await Promise.all(promises);
       return participants;
     },
   },

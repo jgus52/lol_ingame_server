@@ -32,6 +32,7 @@ model Match{
 model MatchParticipants{
   match Match @relation(fields: [matchId], references: [matchId])
   matchId String
+  gameEndTimestamp DateTime
   puuid String
   assist Int
   deaths Int

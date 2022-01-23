@@ -2,6 +2,12 @@ import prisma from "../../client";
 import axios from "axios";
 
 const updateuserInfo = async (ele) => {
+  const user = await prisma.user.findUnique({
+    where: {
+      puuid: ele.puuid,
+    },
+  });
+
   const targetChamp = await prisma.champ.findUnique({
     where: {
       id_userId: {
@@ -53,14 +59,10 @@ const updateuserInfo = async (ele) => {
       },
     });
   }
-
   const match = await prisma.match.findUnique({
     where: { matchId: ele.matchId },
   });
-  const newGameDate = new Date(match.gameEndTimestamp.getTime() - 60000);
-  const user = await prisma.user.findUnique({
-    where: { puuid: ele.puuid },
-  });
+  const newGameDate = new Date(match.gameEndTimestamp.getTime());
   await prisma.user.update({
     where: {
       puuid: ele.puuid,
@@ -74,9 +76,8 @@ const updateuserInfo = async (ele) => {
 
 async function updateMatch(unupdatedMatches, puuid) {
   for (const ele of unupdatedMatches) {
-    const { data: matchInfo } = await axios.get(
-      `https://asia.api.riotgames.com/lol/match/v5/matches/${ele}?api_key=${process.env.RIOTAPI_KEY}`
-    );
+    const matchUrl = `https://asia.api.riotgames.com/lol/match/v5/matches/${ele}?api_key=${process.env.RIOTAPI_KEY}`;
+    const { data: matchInfo } = await axios.get(matchUrl);
     //console.log(matchInfo);
     if (matchInfo.info.gameDuration <= 210) continue;
 
@@ -103,6 +104,7 @@ async function updateMatch(unupdatedMatches, puuid) {
             matchId: match.matchId,
           },
         },
+        gameEndTimestamp: match.gameEndTimestamp,
         puuid: ele.puuid,
         assist: ele.assists,
         deaths: ele.deaths,
@@ -115,7 +117,7 @@ async function updateMatch(unupdatedMatches, puuid) {
         data: obj,
       });
 
-      if (participant.puuid == puuid) updateuserInfo(participant);
+      if (ele.puuid == puuid) updateuserInfo(participant);
     });
   }
 }
@@ -127,45 +129,67 @@ const resolvers = {
         //first search puuid from model users
         for (const puuid of puuids) {
           let user = await prisma.user.findUnique({ where: { puuid: puuid } });
-          let savedLastGameEndTime = Date.parse(user.latestGame) / 1000;
+
+          let unupdatedMatches = await prisma.matchParticipants.findMany({
+            where: {
+              puuid,
+              OR: [
+                {
+                  gameEndTimestamp: {
+                    gt: user.latestGame,
+                  },
+                },
+                {
+                  gameEndTimestamp: {
+                    lt: user.lastGame,
+                  },
+                },
+              ],
+            },
+          });
+
+          if (unupdatedMatches.length !== 0) {
+            for await (const participant of unupdatedMatches) {
+              console.log(participant);
+              await updateuserInfo(participant);
+            }
+          }
+
+          let savedLastGameEndTime =
+            (Date.parse(user.latestGame) + 60000) / 1000;
           const now = Date.now();
 
-          console.log(
-            `https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?startTime=${savedLastGameEndTime}&endTime=${now}&type=ranked&start=0&count=100&api_key=${process.env.RIOTAPI_KEY}`
-          );
+          let matchesUrl = `https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?startTime=${savedLastGameEndTime}&endTime=${now}&queue=420&start=0&count=100&api_key=${process.env.RIOTAPI_KEY}`;
+          console.log(matchesUrl);
 
-          let unupdatedMatches = await axios.get(
-            `https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?startTime=${savedLastGameEndTime}&endTime=${now}&type=ranked&start=0&count=100&api_key=${process.env.RIOTAPI_KEY}`
-          );
+          unupdatedMatches = await axios.get(matchesUrl);
 
-          while (unupdatedMatches.data.length !== 0) {
+          do {
             await updateMatch(unupdatedMatches.data, puuid);
 
             user = await prisma.user.findUnique({ where: { puuid: puuid } });
-            savedLastGameEndTime = Date.parse(user.lastGame) / 1000;
+            savedLastGameEndTime = (Date.parse(user.lastGame) - 60000) / 1000;
 
-            unupdatedMatches = await axios.get(
-              `https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?startTime=${1641495600}&endTime=${savedLastGameEndTime}&type=ranked&start=0&count=100&api_key=${
-                process.env.RIOTAPI_KEY
-              }`
-            );
-            console.log(
-              `https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?startTime=${1641495600}&endTime=${savedLastGameEndTime}&type=ranked&start=0&count=100&api_key=${
-                process.env.RIOTAPI_KEY
-              }`
-            );
-          }
+            matchesUrl = `https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?startTime=${1641495600}&endTime=${savedLastGameEndTime}&queue=420&start=0&count=100&api_key=${
+              process.env.RIOTAPI_KEY
+            }`;
+
+            console.log(matchesUrl);
+            unupdatedMatches = await axios.get(matchesUrl);
+          } while (unupdatedMatches.data.length !== 0);
         }
 
         return {
           ok: true,
         };
       } catch (e) {
-        console.log(e);
+        //console.log(e.response.statusText);
+        const errorMessage = e.response.statusText;
+        console.log(errorMessage);
 
         return {
           ok: false,
-          error: e.response.statusText,
+          error: errorMessage.toString(),
         };
       }
     },

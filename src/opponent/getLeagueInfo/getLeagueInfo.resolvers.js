@@ -11,18 +11,22 @@ const resolvers = {
           `https://kr.api.riotgames.com/lol/league/v4/entries/by-summoner/${ele}?api_key=${process.env.RIOTAPI_KEY}`
         );
 
-        if (league[0]?.queueType == "RANKED_SOLO_5x5") {
-          //console.log(league[0]);
-          leagueInfos.push(league[0]);
-        } else {
-          leagueInfos.push({
-            tier: "During",
-            rank: "Placement",
-            leaguePoints: 0,
-            wins: 0,
-            losses: 1,
-          });
-        }
+        let soloRankInfo = {
+          tier: "During",
+          rank: "Placement",
+          leaguePoints: 0,
+          wins: 0,
+          losses: 0,
+        };
+
+        league.map((ele) => {
+          if (ele?.queueType == "RANKED_SOLO_5x5") {
+            //console.log(league[0]);
+            soloRankInfo = ele;
+          }
+        });
+
+        leagueInfos.push(soloRankInfo);
 
         const user = await prisma.user.findUnique({
           where: { summonerId: ele },
@@ -37,10 +41,10 @@ const resolvers = {
               puuid: newUser.puuid,
               summonerId: newUser.id,
               summonerName: newUser.name,
-              totalWin: league[0].wins,
-              totalLose: league[0].losses,
-              rank: league[0].rank,
-              tier: league[0].tier,
+              totalWin: soloRankInfo.wins,
+              totalLose: soloRankInfo.losses,
+              rank: soloRankInfo.rank,
+              tier: soloRankInfo.tier,
               lastGame: new Date(Date.now()),
               latestGame: seasonBeginDate,
             },
@@ -51,10 +55,10 @@ const resolvers = {
               summonerId: ele,
             },
             data: {
-              totalWin: league[0].wins,
-              totalLose: league[0].losses,
-              rank: league[0].rank,
-              tier: league[0].tier,
+              totalWin: soloRankInfo.wins,
+              totalLose: soloRankInfo.losses,
+              rank: soloRankInfo.rank,
+              tier: soloRankInfo.tier,
             },
           });
         }
