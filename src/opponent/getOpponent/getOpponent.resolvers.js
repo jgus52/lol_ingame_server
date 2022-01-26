@@ -29,7 +29,7 @@ const resolvers = {
 
       participants = participants.filter((ele) => ele.teamId != teamId);
 
-      const promises = participants.map(async (ele) => {
+      for await (const ele of participants) {
         let perkIcons = [];
         let perkNames = [];
         let statIcons = [];
@@ -76,9 +76,8 @@ const resolvers = {
         ele.perks.perkNames = perkNames;
         ele.perks.perkIcons = perkIcons;
         ele.perks.perkInfos = perkInfos;
-      });
+      }
 
-      await Promise.all(promises);
       return participants;
     },
   },

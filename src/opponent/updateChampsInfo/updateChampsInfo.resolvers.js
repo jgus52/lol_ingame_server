@@ -189,7 +189,7 @@ const resolvers = {
 
         return {
           ok: false,
-          error: errorMessage.toString(),
+          error: errorMessage,
         };
       }
     },

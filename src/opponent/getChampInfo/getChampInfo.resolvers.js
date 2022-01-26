@@ -4,10 +4,8 @@ const resolvers = {
   Query: {
     getChampInfo: async (_, { summonerIds, championIds }) => {
       let retChamp = [];
-      //console.log(retChamp);
 
-      const promises = summonerIds.map(async (summonerId, index) => {
-        //console.log(championIds);
+      for await (const [index, summonerId] of summonerIds.entries()) {
         const champInfo = await prisma.champ.findUnique({
           where: {
             id_userId: {
@@ -16,7 +14,7 @@ const resolvers = {
             },
           },
         });
-        console.log(champInfo);
+        //console.log(champInfo);
 
         if (!champInfo) {
           retChamp.push({
@@ -35,12 +33,8 @@ const resolvers = {
             assist: champInfo.assist,
           });
         }
-      });
+      }
 
-      //console.log(retChamp);
-      await Promise.all(promises);
-
-      //console.log(retChamp);
       return retChamp;
     },
   },
