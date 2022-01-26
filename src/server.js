@@ -7,11 +7,7 @@ import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-co
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  plugins: [
-    ApolloServerPluginLandingPageGraphQLPlayground({
-      // options
-    }),
-  ],
+  plugins: [ApolloServerPluginLandingPageGraphQLPlayground({})],
 });
 
 server.listen().then(({ url }) => {
