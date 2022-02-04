@@ -133,4 +133,3 @@ dist
 .pnp.*
 
 /build
-/src/riot.txt
