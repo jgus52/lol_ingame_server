@@ -17,9 +17,10 @@ const startApolloServer = async () => {
 
   const app = express();
 
-  app.use(express.static(__dirname));
+  app.use(express.static(__dirname + "/riot"));
   server.applyMiddleware({ app });
 
+  console.log(__dirname + "/riot");
   app.listen({ port: PORT }, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
   });
