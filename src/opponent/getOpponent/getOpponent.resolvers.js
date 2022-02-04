@@ -82,8 +82,8 @@ const resolvers = {
         }
 
         return participants;
-      } catch {
-        return [];
+      } catch (e) {
+        if (e.response.status == 404) return [];
       }
     },
   },
