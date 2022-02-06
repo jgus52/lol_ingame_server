@@ -8,7 +8,7 @@ import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-co
 const startApolloServer = async () => {
   const PORT = process.env.PORT;
   const server = new ApolloServer({
-    //introspection: true,
+    introspection: true,
     typeDefs,
     resolvers,
     plugins: [ApolloServerPluginLandingPageGraphQLPlayground({})],

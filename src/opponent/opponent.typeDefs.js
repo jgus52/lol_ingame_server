@@ -10,6 +10,8 @@ export default gql`
   }
   type Champ {
     id: Int
+    championName: String
+    championImg: String
     win: Int
     lose: Int
     kill: Int

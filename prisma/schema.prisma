@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,47 +7,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User{
-  puuid String @id
-  summonerId String @unique
-  summonerName String
-  totalWin Int?
-  totalLose Int?
-  rank	String?
-  tier String?
-  latestGame DateTime?
-  lastGame DateTime?
-  champ Champ[]
+model User {
+  summonerName String @unique
+  totalWin     Int?
+  totalLose    Int?
+  rank         String?
+  tier         String?
+  puuid        String    @id
+  summonerId   String    @unique
+  lastGame     DateTime?
+  latestGame   DateTime?
+  champ        Champ[]
 }
 
-model Match{
-  matchId String @id
+model Match {
+  matchId          String              @id
   gameEndTimestamp DateTime
-  participants MatchParticipants[]
+  participants     MatchParticipants[]
 }
 
-model MatchParticipants{
-  match Match @relation(fields: [matchId], references: [matchId])
-  matchId String
+model MatchParticipants {
+  matchId          String
+  puuid            String
+  assist           Int
+  deaths           Int
+  kills            Int
+  win              Boolean
+  championId       Int
   gameEndTimestamp DateTime
-  puuid String
-  assist Int
-  deaths Int
-  kills Int
-  win Boolean
-  championId Int
+  match            Match    @relation(fields: [matchId], references: [matchId])
+
   @@id([matchId, puuid])
 }
 
-model Champ{
-  id Int //championId
-  user User @relation(fields: [userId], references:[puuid])
+model Champ {
+  id     Int
   userId String
-  win Int
-  lose Int
-  kill Int
-  death Int
+  win    Int
+  lose   Int
+  kill   Int
+  death  Int
   assist Int
+  games  Int?
+  user   User   @relation(fields: [userId], references: [puuid], onDelete: Cascade, onUpdate: Cascade)
 
-  @@id([id,userId])
+  @@id([id, userId])
 }
