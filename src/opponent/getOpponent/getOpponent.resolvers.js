@@ -12,9 +12,9 @@ const resolvers = {
         );
         const version = versionData[0];
         const summonerURL = `https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/${summonerName}?api_key=${process.env.RIOTAPI_KEY}`;
-        const runeInfoURL = `http://ddragon.leagueoflegends.com/cdn/${version}/data/ko_KR/runesReforged.json`;
-        const championURL = `http://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/champion.json`;
-        const spellURL = `http://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/summoner.json`;
+        const runeInfoURL = `https://ddragon.leagueoflegends.com/cdn/${version}/data/ko_KR/runesReforged.json`;
+        const championURL = `https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/champion.json`;
+        const spellURL = `https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/summoner.json`;
 
         const { data: summonerInfo } = await axios.get(summonerURL);
         const { data: runeInfo } = await axios.get(runeInfoURL);
@@ -53,8 +53,8 @@ const resolvers = {
           const spell2 = Object.entries(spellInfo.data).find(
             (e) => e[1].key == ele.spell2Id
           );
-          ele.spell1Img = `http://ddragon.leagueoflegends.com/cdn/${version}/img/spell/${spell1[1].id}.png`;
-          ele.spell2Img = `http://ddragon.leagueoflegends.com/cdn/${version}/img/spell/${spell2[1].id}.png`;
+          ele.spell1Img = `https://ddragon.leagueoflegends.com/cdn/${version}/img/spell/${spell1[1].id}.png`;
+          ele.spell2Img = `https://ddragon.leagueoflegends.com/cdn/${version}/img/spell/${spell2[1].id}.png`;
 
           ele.perks.perkIds.map((e) => {
             if (statRunes.has(e))

@@ -26,7 +26,7 @@ export const getMatchInfo = async (puuid) => {
 };
 
 export const getChampData = async (version) => {
-  const championURL = `http://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/champion.json`;
+  const championURL = `https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/champion.json`;
 
   const { data: championInfo } = await axios.get(championURL);
 
