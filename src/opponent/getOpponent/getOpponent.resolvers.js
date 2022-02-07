@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getChampImg } from "../../shared";
 import statRunes from "../../statRunes";
 
 const resolvers = {
@@ -40,20 +41,21 @@ const resolvers = {
           const { data: userInfo } = await axios.get(summonerIdUrl);
           ele.puuid = userInfo.puuid;
 
-          for (let e in championInfo.data) {
-            if (championInfo.data[e].key == ele.championId) {
-              ele.championName = championInfo.data[e].id;
-              ele.championImg = `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${championInfo.data[e].id}.png`;
-            }
-          }
-          for (let e in spellInfo.data) {
-            if (spellInfo.data[e].key == ele.spell1Id) {
-              ele.spell1Img = `http://ddragon.leagueoflegends.com/cdn/${version}/img/spell/${spellInfo.data[e].id}.png`;
-            }
-            if (spellInfo.data[e].key == ele.spell2Id) {
-              ele.spell2Img = `http://ddragon.leagueoflegends.com/cdn/${version}/img/spell/${spellInfo.data[e].id}.png`;
-            }
-          }
+          let champ = Object.entries(championInfo.data).find(
+            (c) => c[1].key == ele.championId
+          );
+          ele.championName = champ[1].id;
+          ele.championImg = await getChampImg(version, champ[1].id);
+
+          const spell1 = Object.entries(spellInfo.data).find(
+            (e) => e[1].key == ele.spell1Id
+          );
+          const spell2 = Object.entries(spellInfo.data).find(
+            (e) => e[1].key == ele.spell2Id
+          );
+          ele.spell1Img = `http://ddragon.leagueoflegends.com/cdn/${version}/img/spell/${spell1[1].id}.png`;
+          ele.spell2Img = `http://ddragon.leagueoflegends.com/cdn/${version}/img/spell/${spell2[1].id}.png`;
+
           ele.perks.perkIds.map((e) => {
             if (statRunes.has(e))
               statIcons.push(
@@ -63,15 +65,14 @@ const resolvers = {
               );
             runeInfo.map((runeObj) => {
               runeObj.slots.map((runes) => {
-                runes.runes.map((rune) => {
-                  if (rune.id == e) {
-                    perkIcons.push(
-                      `https://ddragon.leagueoflegends.com/cdn/img/${rune.icon}`
-                    );
-                    perkNames.push(rune.name);
-                    perkInfos.push(rune.shortDesc);
-                  }
-                });
+                const rune = runes.runes.find((rune) => rune.id === e);
+                if (rune) {
+                  perkIcons.push(
+                    `https://ddragon.leagueoflegends.com/cdn/img/${rune.icon}`
+                  );
+                  perkNames.push(rune.name);
+                  perkInfos.push(rune.shortDesc);
+                }
               });
             });
           });
