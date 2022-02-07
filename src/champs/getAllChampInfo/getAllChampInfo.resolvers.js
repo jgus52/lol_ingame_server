@@ -20,25 +20,24 @@ const resolvers = {
         summonerName = encodeURI(summonerName);
         const summonerInfo = await getSummonerByName(summonerName);
 
-        const champInfo = null;
-        //await prisma.champ.findMany({
-        //   where: {
-        //     userId: summonerInfo.puuid,
-        //   },
-        //   take: 8,
-        //   orderBy: {
-        //     games: "desc",
-        //   },
-        // });
-        // //console.log(champInfo);
+        const champInfo = await prisma.champ.findMany({
+          where: {
+            userId: summonerInfo.puuid,
+          },
+          take: 8,
+          orderBy: {
+            games: "desc",
+          },
+        });
+        //console.log(champInfo);
 
-        // for await (let champ of champInfo) {
-        //   const targetChamp = await champData.find(
-        //     (ele) => ele[1].key == champ.id
-        //   );
-        //   champ.championName = targetChamp[1].id;
-        //   champ.championImg = await getChampImg(version, targetChamp[1].id);
-        // }
+        for await (let champ of champInfo) {
+          const targetChamp = await champData.find(
+            (ele) => ele[1].key == champ.id
+          );
+          champ.championName = targetChamp[1].id;
+          champ.championImg = await getChampImg(version, targetChamp[1].id);
+        }
 
         allyInfo.push({ champ: champInfo, user: summonerInfo });
       }

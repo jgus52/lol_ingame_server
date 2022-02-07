@@ -155,7 +155,7 @@ const resolvers = {
           const now = Date.now();
 
           let matchesUrl = `https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?startTime=${savedLastGameEndTime}&endTime=${now}&queue=420&start=0&count=100&api_key=${process.env.RIOTAPI_KEY}`;
-          console.log(matchesUrl);
+          //console.log(matchesUrl);
 
           let unupdatedMatches = await axios.get(matchesUrl);
 
@@ -169,7 +169,7 @@ const resolvers = {
               process.env.RIOTAPI_KEY
             }`;
 
-            console.log(matchesUrl);
+            //console.log(matchesUrl);
             unupdatedMatches = await axios.get(matchesUrl);
           } while (unupdatedMatches.data.length !== 0);
         }
