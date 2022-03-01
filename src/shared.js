@@ -4,7 +4,14 @@ import prisma from "./client";
 export const getSummonerByName = async (summonerName) => {
   const summonerURL = `https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/${summonerName}?api_key=${process.env.RIOTAPI_KEY}`;
 
-  const { data: summonerInfo } = await axios.get(summonerURL);
+  const { data: summonerInfo } = await axios.get(summonerURL).catch((error) => {
+    if (error.response.status == 404) {
+      throw new Error("Can't found SummonerName");
+    }
+    if (error.response.status == 429) {
+      throw new Error("Too Many Requests, Please Wait a minute and Retry");
+    }
+  });
 
   return summonerInfo;
 };
@@ -12,7 +19,14 @@ export const getSummonerByName = async (summonerName) => {
 export const getSummonerByPuuid = async (puuid) => {
   const summonerURL = `https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}?api_key=${process.env.RIOTAPI_KEY}`;
 
-  const { data: summonerInfo } = await axios.get(summonerURL);
+  const { data: summonerInfo } = await axios.get(summonerURL).catch((error) => {
+    if (error.response.status == 404) {
+      throw new Error("Can't found SummonerName");
+    }
+    if (error.response.status == 429) {
+      throw new Error("Too Many Requests, Please Wait a minute and Retry");
+    }
+  });
 
   return summonerInfo;
 };
@@ -33,6 +47,6 @@ export const getChampData = async (version) => {
   return championInfo;
 };
 
-export const getChampImg = async (version, champName) => {
+export const getChampImg = (version, champName) => {
   return `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champName}.png`;
 };

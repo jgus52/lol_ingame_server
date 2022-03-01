@@ -26,7 +26,7 @@ export default gql`
     summonerName: String!
     summonerId: String!
     teamId: Int!
-    puuid: String!
+    puuid: String
     perks: Perks
     spell1Img: String!
     spell2Img: String!

@@ -1,7 +1,7 @@
 import { gql } from "apollo-server-express";
 
 export default gql`
-  type Query {
-    getRecentMatches(puuids: [String]): [[Match]]
+  type Mutation {
+    updateIds(summonerNames: [String]): Boolean
   }
 `;

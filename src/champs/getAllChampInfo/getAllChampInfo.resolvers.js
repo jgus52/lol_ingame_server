@@ -4,7 +4,7 @@ import { getChampData, getChampImg, getSummonerByName } from "../../shared";
 
 const resolvers = {
   Query: {
-    getAllChampInfo: async (_, { summonerNames }) => {
+    getAllChampInfo: async (_, { puuids }) => {
       let allyInfo = [];
       const { data: versionData } = await axios.get(
         `https://ddragon.leagueoflegends.com/api/versions.json`
@@ -14,36 +14,56 @@ const resolvers = {
       let champData = await getChampData(version);
       champData = Object.entries(champData.data);
 
-      for await (let summonerName of summonerNames) {
-        if (summonerName == "") continue;
-        //console.log(summonerName);
-        summonerName = encodeURI(summonerName);
-        const summonerInfo = await getSummonerByName(summonerName);
-
-        const champInfo = await prisma.champ.findMany({
+      let champs = puuids.map((puuid) =>
+        prisma.champ.findMany({
           where: {
-            userId: summonerInfo.puuid,
+            userId: puuid,
           },
           take: 8,
           orderBy: {
             games: "desc",
           },
-        });
-        //console.log(champInfo);
+        })
+      );
 
-        for await (let champ of champInfo) {
-          const targetChamp = await champData.find(
-            (ele) => ele[1].key == champ.id
-          );
-          champ.championName = targetChamp[1].id;
-          champ.championImg = await getChampImg(version, targetChamp[1].id);
-        }
+      // for await (let summonerName of summonerIds) {
+      //   if (summonerName == "") continue;
+      //   //console.log(summonerName);
+      //   summonerName = encodeURI(summonerName);
 
-        allyInfo.push({ champ: champInfo, user: summonerInfo });
-      }
+      //   const champInfo = await prisma.champ.findMany({
+      //     where: {
+      //       userId: summonerInfo.puuid,
+      //     },
+      //     take: 8,
+      //     orderBy: {
+      //       games: "desc",
+      //     },
+      //   });
+      //   //console.log(champInfo);
 
+      //   for await (let champ of champInfo) {
+      //     const targetChamp = await champData.find(
+      //       (ele) => ele[1].key == champ.id
+      //     );
+      //     champ.championName = targetChamp[1].id;
+      //     champ.championImg = await getChampImg(version, targetChamp[1].id);
+      //   }
+
+      //   allyInfo.push({ champ: champInfo, user: summonerInfo });
+      // }
+
+      await Promise.all(champs).then((responses) => {
+        responses.forEach((champInfos) =>
+          champInfos.forEach((champ) => {
+            const targetChamp = champData.find((ele) => ele[1].key == champ.id);
+            champ.championName = targetChamp[1].id;
+            champ.championImg = getChampImg(version, targetChamp[1].id);
+          })
+        );
+      });
       //console.log(allyInfo);
-      return allyInfo;
+      return champs;
     },
   },
 };

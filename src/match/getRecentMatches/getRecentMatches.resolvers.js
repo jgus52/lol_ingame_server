@@ -5,7 +5,7 @@ import { getChampData, getChampImg } from "../../shared";
 const resolvers = {
   Query: {
     getRecentMatches: async (_, { puuids }) => {
-      let matches = [];
+      //let matches = new Array(puuids.length);
 
       const { data: versionData } = await axios.get(
         `https://ddragon.leagueoflegends.com/api/versions.json`
@@ -15,8 +15,8 @@ const resolvers = {
       let champData = await getChampData(version);
       champData = Object.entries(champData.data);
 
-      for await (const puuid of puuids) {
-        const match = await prisma.matchParticipants.findMany({
+      let matches = puuids.map((puuid) =>
+        prisma.matchParticipants.findMany({
           take: 8,
           where: {
             puuid,
@@ -24,18 +24,40 @@ const resolvers = {
           orderBy: {
             gameEndTimestamp: "desc",
           },
-        });
+        })
+      );
 
-        for await (let ele of match) {
-          const targetChamp = await champData.find(
-            (c) => c[1].key == ele.championId
-          );
-          ele.championImg = await getChampImg(version, targetChamp[1].id);
-        }
+      // for await (const puuid of puuids) {
+      //   const match = await prisma.matchParticipants.findMany({
+      //     take: 8,
+      //     where: {
+      //       puuid,
+      //     },
+      //     orderBy: {
+      //       gameEndTimestamp: "desc",
+      //     },
+      //   });
 
-        matches.push(match);
-      }
+      //   for await (let ele of match) {
+      //     const targetChamp = await champData.find(
+      //       (c) => c[1].key == ele.championId
+      //     );
+      //     ele.championImg = getChampImg(version, targetChamp[1].id);
+      //   }
 
+      //   matches.push(match);
+      // }
+
+      await Promise.all(matches).then((matchInfoArr) =>
+        matchInfoArr.forEach((matchInfos) =>
+          matchInfos.forEach((ele) => {
+            const targetChamp = champData.find(
+              (c) => c[1].key == ele.championId
+            );
+            ele.championImg = getChampImg(version, targetChamp[1].id);
+          })
+        )
+      );
       //console.log(matches);
       return matches;
     },

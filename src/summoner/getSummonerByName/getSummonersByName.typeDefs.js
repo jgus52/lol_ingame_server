@@ -2,6 +2,6 @@ import { gql } from "apollo-server-express";
 
 export default gql`
   type Query {
-    getRecentMatches(puuids: [String]): [[Match]]
+    getSummonersByName(summonerNames: [String]): [Summoner]
   }
 `;

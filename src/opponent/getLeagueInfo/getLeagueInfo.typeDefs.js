@@ -8,7 +8,7 @@ export default gql`
     rank: String
     leaguePoints: Int
   }
-  type Mutation {
+  type Query {
     getLeagueInfo(summonerIds: [String!]): [leagueInfo]
   }
 `;
