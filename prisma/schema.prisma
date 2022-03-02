@@ -9,10 +9,6 @@ datasource db {
 
 model User {
   summonerName String @unique
-  totalWin     Int?
-  totalLose    Int?
-  rank         String?
-  tier         String?
   puuid        String    @id
   summonerId   String    @unique
   lastGame     DateTime?
