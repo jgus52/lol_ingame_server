@@ -3,17 +3,11 @@ import axios from "axios";
 import { getSummonerByPuuid } from "../../shared";
 
 const updateChamp = async (ele) => {
-  const user = await prisma.user.findUnique({
-    where: {
-      puuid: ele.puuid,
-    },
-  });
-
   const targetChamp = await prisma.champ.findUnique({
     where: {
-      id_userId: {
+      id_puuid: {
         id: ele.championId,
-        userId: ele.puuid,
+        puuid: ele.puuid,
       },
     },
   });
@@ -24,9 +18,9 @@ const updateChamp = async (ele) => {
 
     await prisma.champ.update({
       where: {
-        id_userId: {
+        id_puuid: {
           id: ele.championId,
-          userId: ele.puuid,
+          puuid: ele.puuid,
         },
       },
       data: {
@@ -37,7 +31,7 @@ const updateChamp = async (ele) => {
           increment: ele.deaths,
         },
         assist: {
-          increment: ele.assist,
+          increment: ele.assists,
         },
         games: updateGames !== 0 ? { updateGames } : { increment: 1 },
         win: {
@@ -59,61 +53,31 @@ const updateChamp = async (ele) => {
         id: ele.championId,
         kill: ele.kills,
         death: ele.deaths,
-        assist: ele.assist,
+        assist: ele.assists,
         games: 1,
         win: ele.win ? 1 : 0,
         lose: ele.win ? 0 : 1,
       },
     });
   }
-  const match = await prisma.match.findUnique({
-    where: { matchId: ele.matchId },
-  });
-  const newGameDate = new Date(match.gameEndTimestamp.getTime());
-  await prisma.user.update({
-    where: {
-      puuid: ele.puuid,
-    },
-    data: {
-      lastGame: user.lastGame > newGameDate ? newGameDate : user.lastGame,
-      latestGame: user.latestGame < newGameDate ? newGameDate : user.latestGame,
-    },
-  });
-
-  //console.log(match.gameEndTimestamp, user.lastGame);
-  //console.log(user.lastGame, user.latestGame);
 };
 
-const addMatchParticipants = async (unupdatedMatches, puuid) => {
-  // const lastGame = unupdatedMatches[unupdatedMatches.length - 1];
-  // const latestGame = unupdatedMatches[0];
-
-  let matchRequests = unupdatedMatches.map(async (ele) => {
+const addMatchParticipants = async (unupdatedMatches) => {
+  let matchRequests = [];
+  for await (let ele of unupdatedMatches) {
     let match = await prisma.match.findUnique({
       where: {
         matchId: ele,
       },
     });
-
     if (match === null)
-      return axios.get(
-        `https://asia.api.riotgames.com/lol/match/v5/matches/${ele}?api_key=${process.env.RIOTAPI_KEY}`
+      matchRequests.push(
+        axios.get(
+          `https://asia.api.riotgames.com/lol/match/v5/matches/${ele}?api_key=${process.env.RIOTAPI_KEY}`
+        )
       );
-    else {
-      const participant = await prisma.matchParticipants.findUnique({
-        where: {
-          matchId_puuid: {
-            matchId: ele,
-            puuid: puuid,
-          },
-        },
-      });
-      updateChamp(participant);
-    }
-  });
-  //console.log(needBeUpdate);
+  }
   let needBeUpdate = new Array(matchRequests.length);
-
   await Promise.all(matchRequests).then(async (responses) => {
     responses.forEach((response, index) => {
       const { data: matchInfo } = response;
@@ -122,139 +86,128 @@ const addMatchParticipants = async (unupdatedMatches, puuid) => {
     });
   });
 
-  let prismaCreateMatches = needBeUpdate.map((matchInfo) => {
+  let createMatches = [];
+  needBeUpdate.forEach((matchInfo) => {
     if (matchInfo.info.gameDuration <= 210) return;
     const matchEndTime = new Date(matchInfo.info.gameEndTimestamp);
-    return prisma.match.create({
-      data: {
-        matchId: matchInfo.metadata.matchId,
-        gameEndTimestamp: matchEndTime,
-      },
-    });
-  });
-
-  await Promise.all(prismaCreateMatches);
-
-  let participants = needBeUpdate.map(async (matchInfo) => {
-    const matchEndTime = new Date(matchInfo.info.gameEndTimestamp);
-    const matchParticipants = matchInfo.info.participants.map((ele) =>
-      prisma.matchParticipants.create({
+    createMatches.push(
+      prisma.match.create({
         data: {
-          match: {
-            connect: {
-              matchId: matchInfo.metadata.matchId,
-            },
-          },
-          puuid: ele.puuid,
+          matchId: matchInfo.metadata.matchId,
           gameEndTimestamp: matchEndTime,
-          assist: ele.assists,
-          deaths: ele.deaths,
-          kills: ele.kills,
-          win: ele.win,
-          championId: ele.championId,
         },
       })
     );
+  });
 
-    let champ;
-    await Promise.all(matchParticipants).then(async (responses, index) => {
-      champ = responses.find((ele) => ele.puuid === puuid);
+  let participants;
+  //매치 생성
+  await Promise.all(createMatches).then(async () => {
+    for await (let matchInfo of needBeUpdate) {
+      if (matchInfo.info.gameDuration <= 210) continue;
+      for await (let ele of matchInfo.info.participants) {
+        let user = await prisma.user.findUnique({
+          where: { puuid: ele.puuid },
+        });
+
+        if (!user) {
+          user = await prisma.user.create({
+            data: {
+              puuid: ele.puuid,
+              summonerId: ele.summonerId,
+              summonerName: ele.summonerName,
+            },
+          });
+        }
+      }
+    }
+
+    participants = [];
+    needBeUpdate.forEach(async (matchInfo) => {
+      if (matchInfo.info.gameDuration <= 210) return;
+      const matchEndTime = new Date(matchInfo.info.gameEndTimestamp);
+      const matchParticipants = matchInfo.info.participants.map(async (ele) => {
+        return prisma.matchParticipants.create({
+          data: {
+            match: {
+              connect: {
+                matchId: matchInfo.metadata.matchId,
+              },
+            },
+            user: {
+              connect: {
+                puuid: ele.puuid,
+              },
+            },
+            gameEndTimestamp: matchEndTime,
+            assist: ele.assists,
+            deaths: ele.deaths,
+            kills: ele.kills,
+            win: ele.win,
+            championId: ele.championId,
+          },
+        });
+      });
+
+      participants.push(matchParticipants);
     });
-
-    return champ;
   });
 
   await Promise.all(participants).then(async () => {
-    for await (const champ of participants) {
-      await updateChamp(champ);
+    for await (const matchInfo of needBeUpdate) {
+      if (matchInfo.info.gameDuration <= 210) continue;
+      for await (const ele of matchInfo.info.participants) {
+        await updateChamp(ele);
+      }
     }
   });
-
-  //for (const ele of unupdatedMatches) {
-  //console.log(ele);
-  // let match = await prisma.match.findUnique({
-  //   where: {
-  //     matchId: ele,
-  //   },
-  // });
-  // //console.log(match.matchId);
-  // if (!match) {
-  //   const matchUrl = `https://asia.api.riotgames.com/lol/match/v5/matches/${ele}?api_key=${process.env.RIOTAPI_KEY}`;
-  //   const { data: matchInfo } = await axios.get(matchUrl);
-  //   //console.log(matchInfo);
-  //   if (matchInfo.info.gameDuration <= 210) continue;
-  //   const matchEndTime = new Date(matchInfo.info.gameEndTimestamp);
-  //   match = await prisma.match.create({
-  //     data: {
-  //       matchId: matchInfo.metadata.matchId,
-  //       gameEndTimestamp: matchEndTime,
-  //     },
-  //   });
-  //   for await (const ele of matchInfo.info.participants) {
-  //     const obj = {
-  //       match: {
-  //         connect: {
-  //           matchId: match.matchId,
-  //         },
-  //       },
-  //       puuid: ele.puuid,
-  //       gameEndTimestamp: match.gameEndTimestamp,
-  //       assist: ele.assists,
-  //       deaths: ele.deaths,
-  //       kills: ele.kills,
-  //       win: ele.win,
-  //       championId: ele.championId,
-  //     };
-  //     const participant = await prisma.matchParticipants.create({
-  //       data: obj,
-  //     });
-  //     if (ele.puuid == puuid) await updateChamp(participant);
-  //   }
-  // } else {
-  //   //getLeagueInfo를 한 뒤에 받기 때문에 갱신이 완료된 상태에서 호출된다.
-  //   const participant = await prisma.matchParticipants.findUnique({
-  //     where: {
-  //       matchId_puuid: {
-  //         matchId: ele,
-  //         puuid: puuid,
-  //       },
-  //     },
-  //   });
-  //   await updateChamp(participant);
-  // }
-  //}
 };
 
 const resolvers = {
   Mutation: {
     updateChampsInfo: async (_, { puuids }) => {
       try {
-        //first search puuid from model users
         for (const puuid of puuids) {
-          let user = await prisma.user.findUnique({ where: { puuid: puuid } });
+          let latestMatch = await prisma.matchParticipants.findFirst({
+            where: {
+              puuid,
+            },
+            orderBy: {
+              gameEndTimestamp: "desc",
+            },
+          });
 
-          let savedLastGameEndTime =
-            (Date.parse(user.latestGame) + 60000) / 1000;
-          const now = Date.now();
+          let matchesUrl;
+          if (latestMatch !== null) {
+            let savedLatestGameEndTime =
+              (Date.parse(latestMatch.gameEndTimestamp) + 60000) / 1000;
+            const now = Date.now();
 
-          let matchesUrl = `https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?startTime=${savedLastGameEndTime}&endTime=${now}&queue=420&start=0&count=10&api_key=${process.env.RIOTAPI_KEY}`;
-          //console.log(matchesUrl);
+            matchesUrl = `https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?startTime=${savedLatestGameEndTime}&endTime=${now}&queue=420&start=0&count=10&api_key=${process.env.RIOTAPI_KEY}`;
+          } else {
+            matchesUrl = `https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&start=0&count=10&api_key=${process.env.RIOTAPI_KEY}`;
+          }
 
           let unupdatedMatches = await axios.get(matchesUrl);
-          addMatchParticipants(unupdatedMatches.data, puuid);
-
           do {
-            await addMatchParticipants(unupdatedMatches.data, puuid);
+            await addMatchParticipants(unupdatedMatches.data);
 
-            user = await prisma.user.findUnique({ where: { puuid: puuid } });
-            savedLastGameEndTime = (Date.parse(user.lastGame) - 60000) / 1000;
-            //console.log(savedLastGameEndTime);
+            let lastMatch = await prisma.matchParticipants.findFirst({
+              where: {
+                puuid,
+              },
+              orderBy: {
+                gameEndTimestamp: "asc",
+              },
+            });
+
+            let savedLastGameEndTime =
+              (Date.parse(lastMatch.gameEndTimestamp) - 60000) / 1000;
 
             matchesUrl = `https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?startTime=${1641495600}&endTime=${savedLastGameEndTime}&queue=420&start=0&count=10&api_key=${
               process.env.RIOTAPI_KEY
             }`;
 
-            //console.log(matchesUrl);
             unupdatedMatches = await axios.get(matchesUrl);
           } while (unupdatedMatches.data.length !== 0);
         }

@@ -1,5 +1,12 @@
 import axios from "axios";
+import { cacheAdapterEnhancer, cachedAdapterEnhancer } from "axios-extensions";
 import prisma from "./client";
+
+export const cachedAxios = axios.create({
+  adapter: cacheAdapterEnhancer(axios.defaults.adapter, {
+    enabledByDefault: true,
+  }),
+});
 
 export const getSummonerByName = async (summonerName) => {
   const summonerURL = `https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/${summonerName}?api_key=${process.env.RIOTAPI_KEY}`;
@@ -42,7 +49,7 @@ export const getMatchInfo = async (puuid) => {
 export const getChampData = async (version) => {
   const championURL = `https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/champion.json`;
 
-  const { data: championInfo } = await axios.get(championURL);
+  const { data: championInfo } = await cachedAxios.get(championURL);
 
   return championInfo;
 };

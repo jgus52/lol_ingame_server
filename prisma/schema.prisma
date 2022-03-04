@@ -14,6 +14,7 @@ model User {
   lastGame     DateTime?
   latestGame   DateTime?
   champ        Champ[]
+  match        MatchParticipants[]
 }
 
 model Match {
@@ -24,6 +25,7 @@ model Match {
 
 model MatchParticipants {
   matchId          String
+  user             User @relation(fields: [puuid], references: [puuid], onUpdate: Cascade, onDelete: Cascade)
   puuid            String
   assist           Int
   deaths           Int
@@ -31,21 +33,21 @@ model MatchParticipants {
   win              Boolean
   championId       Int
   gameEndTimestamp DateTime
-  match            Match    @relation(fields: [matchId], references: [matchId])
+  match            Match    @relation(fields: [matchId], references: [matchId], onDelete: Cascade)
 
   @@id([matchId, puuid])
 }
 
 model Champ {
   id     Int
-  userId String
+  puuid  String
   win    Int
   lose   Int
   kill   Int
   death  Int
   assist Int
   games  Int?
-  user   User   @relation(fields: [userId], references: [puuid], onDelete: Cascade, onUpdate: Cascade)
+  user   User   @relation(fields: [puuid], references: [puuid], onDelete: Cascade, onUpdate: Cascade)
 
-  @@id([id, userId])
+  @@id([id, puuid])
 }

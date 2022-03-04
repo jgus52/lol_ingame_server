@@ -6,9 +6,6 @@ export default gql`
     puuid: String!
     id: String!
     name: String!
-    tier: String
-    rank: String
-    wins: Int
-    losses: Int
+    profileIcon: String
   }
 `;

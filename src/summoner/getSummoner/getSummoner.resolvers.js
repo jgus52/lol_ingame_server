@@ -1,14 +1,19 @@
 import axios from "axios";
-
 const resolvers = {
   Query: {
     getSummoner: async (_, { summonerName }) => {
-      const url = `https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/${summonerName}?api_key=${process.env.RIOTAPI_KEY}`;
+      const { data: versionData } = await axios.get(
+        `https://ddragon.leagueoflegends.com/api/versions.json`
+      );
+      const version = versionData[0];
 
-      const ret = await axios.get(url);
+      const url = `https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURI(
+        summonerName
+      )}?api_key=${process.env.RIOTAPI_KEY}`;
+      const { data: summoner } = await axios.get(url);
 
-      console.log(ret);
-      return ret.data;
+      summoner.profileIcon = `https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/${summoner.profileIconId}.png`;
+      return summoner;
     },
   },
 };

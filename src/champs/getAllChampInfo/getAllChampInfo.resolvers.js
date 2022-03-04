@@ -4,8 +4,7 @@ import { getChampData, getChampImg, getSummonerByName } from "../../shared";
 
 const resolvers = {
   Query: {
-    getAllChampInfo: async (_, { puuids }) => {
-      let allyInfo = [];
+    getAllChampInfo: async (_, { puuids, take, cursor }) => {
       const { data: versionData } = await axios.get(
         `https://ddragon.leagueoflegends.com/api/versions.json`
       );
@@ -17,41 +16,16 @@ const resolvers = {
       let champs = puuids.map((puuid) =>
         prisma.champ.findMany({
           where: {
-            userId: puuid,
+            puuid: puuid,
           },
-          take: 8,
+          take,
+          skip: cursor ? 1 : 0,
+          cursor: cursor ? { id_puuid: { id: cursor, puuid } } : undefined,
           orderBy: {
             games: "desc",
           },
         })
       );
-
-      // for await (let summonerName of summonerIds) {
-      //   if (summonerName == "") continue;
-      //   //console.log(summonerName);
-      //   summonerName = encodeURI(summonerName);
-
-      //   const champInfo = await prisma.champ.findMany({
-      //     where: {
-      //       userId: summonerInfo.puuid,
-      //     },
-      //     take: 8,
-      //     orderBy: {
-      //       games: "desc",
-      //     },
-      //   });
-      //   //console.log(champInfo);
-
-      //   for await (let champ of champInfo) {
-      //     const targetChamp = await champData.find(
-      //       (ele) => ele[1].key == champ.id
-      //     );
-      //     champ.championName = targetChamp[1].id;
-      //     champ.championImg = await getChampImg(version, targetChamp[1].id);
-      //   }
-
-      //   allyInfo.push({ champ: champInfo, user: summonerInfo });
-      // }
 
       await Promise.all(champs).then((responses) => {
         responses.forEach((champInfos) =>
@@ -62,7 +36,7 @@ const resolvers = {
           })
         );
       });
-      //console.log(allyInfo);
+
       return champs;
     },
   },

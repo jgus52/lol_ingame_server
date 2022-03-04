@@ -1,6 +1,5 @@
 import axios from "axios";
-import { cacheAdapterEnhancer, cachedAdapterEnhancer } from "axios-extensions";
-import { getChampImg, getSummonerByName } from "../../shared";
+import { getChampImg, getSummonerByName, cachedAxios } from "../../shared";
 import statRunes from "../../statRunes";
 import { ApolloError } from "apollo-server-express";
 
@@ -8,11 +7,6 @@ const resolvers = {
   Query: {
     getOpponent: async (_, { summonerName }) => {
       //try {
-      const cachedAxios = axios.create({
-        adapter: cacheAdapterEnhancer(axios.defaults.adapter, {
-          enabledByDefault: true,
-        }),
-      });
       summonerName = encodeURI(summonerName);
       const { data: versionData } = await cachedAxios.get(
         `https://ddragon.leagueoflegends.com/api/versions.json`
