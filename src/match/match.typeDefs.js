@@ -15,6 +15,7 @@ export default gql`
     participants: [MatchParticipant]
     championImg: String
     championId: String
+    gameEndTimestamp: String
     win: Boolean
     kills: Int
     deaths: Int
